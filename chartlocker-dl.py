@@ -16,7 +16,7 @@ from rich.console import Console
 from rich.table import Table
 
 BASE = "https://chartlocker.brucebalan.com/"
-UA   = "ChartLockerDL/0.9.1 (+https://github.com/your-repo)"
+UA   = "ChartLockerDL/0.9.1 (+https://github.com/wrxco/chartlocker-dl)"
 
 # ─────────── CLI ───────────
 def cli():
