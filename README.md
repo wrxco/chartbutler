@@ -56,7 +56,9 @@ The script will prompt you to select a region and then the files to download.
 
 A typical workflow keeps the script in one directory and downloads charts into a separate folder. For example:
 
-![Virtualenv setup and CLI invocation](screenshots/cli_a.png)
+![Virtualenv setup](screenshots/setup.png)
+
+![CLI invocation](screenshots/cli_a.png)
 
 ![Downloading charts into the `charts` directory](screenshots/cli_b.png)
 
