@@ -1,0 +1,14 @@
+# requirements.txt
+# Core dependencies for ChartLocker DL script
+requests
+beautifulsoup4
+tqdm
+tabulate
+fuzzywuzzy
+rich
+
+# Optional dependencies
+# For faster fuzzy matching:
+python-Levenshtein
+# For MediaFire API (premium) support:
+mediafire
