@@ -52,6 +52,14 @@ python chartbutler.py --source {chartlocker,savinggrace} [--cookies COOKIES_FILE
 
 The script will prompt you to select a region and then the files to download.
 
+## Examples
+
+A typical workflow keeps the script in one directory and downloads charts into a separate folder. For example:
+
+![Virtualenv setup and CLI invocation](screenshots/cli_a.png)
+
+![Downloading charts into the `charts` directory](screenshots/cli_b.png)
+
 ## Notes
 - The cookie-based download method has not been thoroughly tested and may be unstable.
 - The script is not affiliated with or endorsed by The Chart Locker project or MediaFire.
