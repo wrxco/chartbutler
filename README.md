@@ -70,6 +70,7 @@ A typical workflow keeps the script in one directory and downloads charts into a
 This utility accesses content hosted on:
 - The Chart Locker by Bruce Balan
 - Sailing Grace Charts by S/Y Grace
+
 All rights to the original data belong to the respective site owners.
 
 ## Acknowledgements
