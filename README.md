@@ -1,6 +1,6 @@
 # ChartButler
 
-ChartButler is a command-line utility to download MBTiles files from multiple sources, including:
+ChartButler is a command-line utility to download MBTiles files from multiple sources for use with OpenCPN, including:
 - The Chart Locker (https://chartlocker.brucebalan.com/) by Bruce Balan
 - Sailing Grace Charts (https://sailingamazinggrace.com/charts) by S/Y Grace
 
@@ -12,6 +12,7 @@ It supports both anonymous HTTP downloads and premium downloads using MediaFire 
 - Anonymous HTML scraping method for public files.
 - Premium support via MediaFire API (App ID 42511) or cookies.txt.
 - Automatic extraction of ZIP archives after download.
+- Folder organization based on source, region, and subregion to assist with granular OpenCPN importing.
 
 ## Requirements
 This script is written in Python 3.6+ and depends on the following packages:
