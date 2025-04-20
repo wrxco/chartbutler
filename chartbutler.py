@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# chartlocker_dl.py · v0.9.1  (April 2025)
+# chartbutler.py · v0.9.1  (April 2025)
 #
 #  v0.9 + full‑length Area & Notes columns
 # ----------------------------------------------------------
@@ -16,11 +16,13 @@ from rich.console import Console
 from rich.table import Table
 
 BASE = "https://chartlocker.brucebalan.com/"
-UA   = "ChartLockerDL/0.9.1 (+https://github.com/wrxco/chartlocker-dl)"
+UA   = "ChartButler/0.9.1 (+https://github.com/wrxco/chartbutler)"
 
 # ─────────── CLI ───────────
 def cli():
-    p = argparse.ArgumentParser(description="Download files from The Chart Locker")
+    p = argparse.ArgumentParser(
+        description="Download files from The Chart Locker or Sailing Grace"
+    )
     p.add_argument("--cookies", help="Path to cookies.txt for MediaFire session")
     p.add_argument("--email", help="MediaFire account email (optional)")
     p.add_argument("--password", help="MediaFire account password (optional)")
@@ -29,10 +31,38 @@ def cli():
         default=os.getcwd(),
         help="Destination directory for downloaded charts (default: current working directory)"
     )
+    p.add_argument(
+        "--source",
+        choices=["chartlocker", "savinggrace"],
+        default=None,
+        help="Source site: chartlocker or savinggrace (if omitted, will prompt)"
+    )
     return p.parse_args()
+    
+def pick_source():
+    """
+    Prompt user to select a source if not provided via CLI.
+    """
+    sources = ["chartlocker", "savinggrace"]
+    print("\nAVAILABLE SOURCES")
+    for i, src in enumerate(sources, 1):
+        print(f"  {i}. {src}")
+    while True:
+        ans = input("Select source # or name > ").strip()
+        if ans.isdigit() and 1 <= int(ans) <= len(sources):
+            return sources[int(ans) - 1]
+        if ans in sources:
+            return ans
+        print(f"Invalid selection '{ans}'. Please choose a valid source.")
 
 # ───── session ─────
 def make_session(a):
+    # For savinggrace source, skip MediaFire auth entirely
+    if getattr(a, 'source', None) == 'savinggrace':
+        s = requests.Session()
+        s.headers["User-Agent"] = UA
+        s.auth_mode = 'anonymous'
+        return s
     import getpass
     # start session, set User-Agent
     s = requests.Session()
@@ -100,8 +130,23 @@ def td_notes(tds):
     return ""
 def human_size(tok): return tok if re.search(r'\d',tok) else ""
 def landing_filename(url):
-    parts=urlparse(url).path.rstrip("/").split("/")
-    return parts[-2] if len(parts)>=2 else "file"
+    """
+    Return a suitable filename for the download URL.
+    If the URL path ends with a file (has an extension), use that basename,
+    otherwise fall back to the prior path segment.
+    """
+    path = urlparse(url).path.rstrip('/')
+    parts = path.split('/')
+    if parts:
+        last = parts[-1]
+        # if last part looks like a file name (contains a dot), use it
+        if '.' in last:
+            return last
+        # otherwise, fallback to previous segment
+        if len(parts) >= 2:
+            return parts[-2]
+        return last or 'file'
+    return 'file'
 
 # ───── scrape page ─────
 def scrape(sess):
@@ -115,6 +160,74 @@ def scrape(sess):
         elif tag.name=="table" and region: buf.append(tag)
     if region and buf: tree[region]=parse_region(buf)
     return {r:rows for r,rows in tree.items() if rows and r.lower() not in skip}
+
+def scrape_savinggrace(sess):
+    """
+    Scrape charts from https://sailingamazinggrace.com/charts.
+    Returns dict mapping region labels to list of (area, url, size, note).
+    """
+    SAVE_URL = "https://sailingamazinggrace.com/charts"
+    doc = soup(SAVE_URL, sess)
+    regions = {}
+    hrs = doc.find_all("hr", id=True)
+    for idx, hr in enumerate(hrs):
+        # top‑level region
+        h2 = hr.find_next("h2")
+        if not h2:
+            continue
+        region_label = h2.get_text(strip=True)
+        # limit to this region
+        next_hr = hrs[idx+1] if idx+1 < len(hrs) else None
+        rows = []
+        elem = hr
+        current_sub = None
+        current_zoom = ""
+        # walk through elements until next region
+        while True:
+            elem = elem.find_next()
+            if elem is None or elem == next_hr:
+                break
+            # detect subregion headings
+            if getattr(elem, 'name', None) == 'h3':
+                text = elem.get_text(strip=True)
+                # extract zoom in parentheses
+                m = re.match(r"(.+?)\s*\((.+?)\)", text)
+                if m:
+                    current_sub = m.group(1).strip()
+                    current_zoom = m.group(2).strip()
+                else:
+                    current_sub = text
+                    current_zoom = ""
+                continue
+            # chart rows
+            if getattr(elem, 'name', None) == 'li' and 'row' in elem.get('class', []):
+                # area name
+                area_div = elem.find('div', class_='area')
+                area_txt = area_div.get_text(strip=True) if area_div else ''
+                # creation date
+                created_div = elem.find('div', class_='created')
+                created = created_div.get_text(strip=True) if created_div else ''
+                # assemble note with zoom
+                if current_zoom:
+                    note = f"{created} ({current_zoom})" if created else f"{current_zoom}"
+                else:
+                    note = created
+                # full area path: subregion / area
+                if current_sub:
+                    area_full = f"{current_sub} / {area_txt}"
+                else:
+                    area_full = area_txt
+                # each map column
+                for j, mp in enumerate(elem.find_all('div', class_='map')):
+                    a = mp.find('a', href=True)
+                    if not a:
+                        continue
+                    url = a['href']
+                    size = a.get_text(strip=True)
+                    rows.append((area_full, url, size, note if j == 0 else ''))
+        if rows:
+            regions[region_label] = rows
+    return regions
 
 def parse_region(tables):
     # Parse each <tr> as a group, collecting link counts, group notes, links, and sizes
@@ -340,12 +453,21 @@ def fetch(url,dest,sess,done):
 
 # ───── main ─────
 def main():
-    # parse CLI and create session
+    # parse CLI and select source if needed
     args = cli()
+    if args.source is None:
+        args.source = pick_source()
+    # create HTTP session
     sess = make_session(args)
-    tree = scrape(sess)
-    # prepare output directory
-    base_dir = os.path.abspath(args.charts_dir)
+    # select scraping function based on source
+    if args.source == 'savinggrace':
+        tree = scrape_savinggrace(sess)
+    else:
+        tree = scrape(sess)
+    # prepare output directory, grouping by source
+    root = os.path.abspath(args.charts_dir)
+    source_dir = 'ChartLocker' if args.source == 'chartlocker' else 'SavingGrace'
+    base_dir = os.path.join(root, source_dir)
     os.makedirs(base_dir, exist_ok=True)
     # select region and files
     region = pick_region(list(tree))
@@ -371,9 +493,15 @@ def main():
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
         # resolve direct-download URL and fetch
+        # fetch differently depending on source
         try:
-            direct_url = mediafire_direct(link, sess)
-            fetch(direct_url, folder, sess, done)
+            if args.source == 'savinggrace':
+                # direct HTTP download
+                fetch(link, folder, sess, done)
+            else:
+                # MediaFire URL resolution
+                direct_url = mediafire_direct(link, sess)
+                fetch(direct_url, folder, sess, done)
         except Exception as e:
             print("⚠", basename, e)
     print(f"\nFinished – {len(done)} file(s) downloaded into '{base_dir}'.")

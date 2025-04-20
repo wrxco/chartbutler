@@ -1,9 +1,13 @@
-# ChartLocker DL
+# ChartButler
 
-ChartLocker DL is a command-line utility to download MBTiles files from The Chart Locker website (https://chartlocker.brucebalan.com/). It supports both anonymous downloads and premium downloads using MediaFire accounts (via cookies or API).
+ChartButler is a command-line utility to download MBTiles files from multiple sources, including:
+- The Chart Locker (https://chartlocker.brucebalan.com/) by Bruce Balan
+- Sailing Grace Charts (https://sailingamazinggrace.com/charts) by S/Y Grace
+
+It supports both anonymous HTTP downloads and premium downloads using MediaFire accounts (via cookies or API) for The Chart Locker source.
 
 ## Features
-- Scrape regions and file listings from The Chart Locker site.
+- Scrape regions and file listings from The Chart Locker or Sailing Grace sites.
 - Interactive selection of region and files to download.
 - Anonymous HTML scraping method for public files.
 - Premium support via MediaFire API (App ID 42511) or cookies.txt.
@@ -38,11 +42,12 @@ pip install -r requirements.txt
 
 ## Usage
 ```bash
-python chartlocker-dl.py [--cookies COOKIES_FILE] [--email EMAIL [--password PASSWORD]] [--charts-dir OUTPUT_DIR]
+python chartbutler.py --source {chartlocker,savinggrace} [--cookies COOKIES_FILE] [--email EMAIL [--password PASSWORD]] [--charts-dir OUTPUT_DIR]
 ```
 
-- `--cookies`: path to cookies.txt exported from your browser for MediaFire sessions.
-- `--email`, `--password`: MediaFire account credentials for premium API access.
+- `--source`: choose which site to download from: `chartlocker` (default) or `savinggrace`.
+- `--cookies`: path to cookies.txt exported from your browser for MediaFire sessions (ChartLocker only).
+- `--email`, `--password`: MediaFire account credentials for premium API access (ChartLocker only).
 - `--charts-dir`: destination directory for downloaded charts (default: current directory).
 
 The script will prompt you to select a region and then the files to download.
@@ -52,7 +57,10 @@ The script will prompt you to select a region and then the files to download.
 - The script is not affiliated with or endorsed by The Chart Locker project or MediaFire.
 
 ## Credit
-This utility accesses content hosted on The Chart Locker by Bruce Balan. All rights to the original data belong to the Chart Locker website owner.
+This utility accesses content hosted on:
+- The Chart Locker by Bruce Balan
+- Sailing Grace Charts by S/Y Grace
+All rights to the original data belong to the respective site owners.
 
 ## Acknowledgements
 This script was produced with the help of OpenAI Codex models (o3 and o4-mini).
