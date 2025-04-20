@@ -46,7 +46,7 @@ pip install -r requirements.txt
 python chartbutler.py --source {chartlocker,savinggrace} [--cookies COOKIES_FILE] [--email EMAIL [--password PASSWORD]] [--charts-dir OUTPUT_DIR]
 ```
 
-- `--source`: choose which site to download from: `chartlocker` (default) or `savinggrace`.
+- `--source`: choose which site to download from: `chartlocker` or `savinggrace`.
 - `--cookies`: path to cookies.txt exported from your browser for MediaFire sessions (ChartLocker only).
 - `--email`, `--password`: MediaFire account credentials for premium API access (ChartLocker only).
 - `--charts-dir`: destination directory for downloaded charts (default: current directory).
