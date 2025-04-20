@@ -64,7 +64,7 @@ A typical workflow keeps the script in one directory and downloads charts into a
 
 ## Notes
 - The cookie-based download method has not been thoroughly tested and may be unstable.
-- The script is not affiliated with or endorsed by The Chart Locker project or MediaFire.
+- The script is not affiliated with or endorsed by The Chart Locker project, Sailing Grace, or MediaFire.
 
 ## Credit
 This utility accesses content hosted on:
