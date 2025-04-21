@@ -317,21 +317,28 @@ def mediafire_direct(url, s):
         try:
             # Attempt to use MediaFire API for a permissioned link
             resp = api.file_get_links(quick_key)
-            # Unwrap nested 'response' if present
-            data = resp.get('response', resp) or resp
-            links = data.get('links') or []
-            # Some versions may return a single dict
-            if isinstance(links, dict):
-                links = [links]
-            if links:
-                first = links[0]
-                for key in ('direct_download', 'download_url'):
-                    val = first.get(key)
-                    if val:
-                        print(f"⇱ [MediaFire API] using direct link: {val}")
-                        return val
-            # no links found in API response
-            print(f"⚠ [MediaFire API] no links for key {quick_key}, response keys: {list(data.keys())}")
+            # resp is the parsed 'response' dict from the API
+            # Extract the 'links' wrapper
+            wrapper = resp.get('links')
+            if wrapper:
+                # In some responses, links may be nested under 'link'
+                entries = None
+                if isinstance(wrapper, dict) and 'link' in wrapper:
+                    entries = wrapper['link']
+                else:
+                    entries = wrapper
+                # Normalize to list
+                if isinstance(entries, dict):
+                    entries = [entries]
+                if isinstance(entries, list) and entries:
+                    first = entries[0]
+                    for key in ('direct_download', 'download_url'):
+                        val = first.get(key)
+                        if val:
+                            print(f"⇱ [MediaFire API] using direct link: {val}")
+                            return val
+            # no usable links found
+            print(f"⚠ [MediaFire API] no download links in response, keys: {list(resp.keys())}")
         except Exception as e:
             print(f"⚠ [MediaFire API] error fetching links for key {quick_key}: {e}")
     # 2) HTML regex fallback (unauthenticated or API fallback)
