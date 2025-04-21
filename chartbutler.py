@@ -79,18 +79,10 @@ def make_session(a):
     adapter = HTTPAdapter(max_retries=retry_strategy)
     s.mount("https://", adapter)
     s.mount("http://", adapter)
-    # authentication mode: anonymous | cookies | premium
+    # authentication mode: anonymous | premium | cookies
     mode = 'anonymous'
-    # 1) load cookies if file provided
-    if a.cookies and os.path.isfile(a.cookies):
-        for ln in open(a.cookies, encoding="utf-8"):
-            if ln.startswith("#") or not ln.strip():
-                continue
-            dom, _, path, sec, _, name, val = ln.strip().split("\t")
-            s.cookies.set(name, val, domain=dom, path=path, secure=(sec.lower() == "true"))
-        mode = 'cookies'
-    # 2) attempt MediaFire API login when email given
-    elif a.email:
+    # 1) attempt MediaFire API login when email given (premium mode)
+    if a.email:
         # prompt for password if missing
         if not a.password:
             try:
@@ -101,24 +93,29 @@ def make_session(a):
         if a.password:
             try:
                 from mediafire import MediaFireApi
-                # obtain and store API session token
                 api = MediaFireApi()
                 tok = api.user_get_session_token(
                     app_id="42511",
                     email=a.email,
                     password=a.password
                 )
-                # set API session and auth header
-                # store session token internally for API requests
                 api._session = tok
-                s.headers["Authorization"] = "Bearer " + tok["session_token"]
+                s.headers["Authorization"] = "Bearer " + tok.get("session_token", "")
                 s.mediafire_api = api
                 mode = 'premium'
             except Exception as e:
                 print("⚠ MediaFire login failed:", e)
         else:
             print("⚠ MediaFire login skipped: no password provided")
-    # 3) warn if password provided without email
+    # 2) load cookies if file provided and no premium login
+    elif a.cookies and os.path.isfile(a.cookies):
+        for ln in open(a.cookies, encoding="utf-8"):
+            if ln.startswith("#") or not ln.strip():
+                continue
+            dom, _, path, sec, _, name, val = ln.strip().split("\t")
+            s.cookies.set(name, val, domain=dom, path=path, secure=(sec.lower() == "true"))
+        mode = 'cookies'
+    # 3) warn if password provided without email/cookies
     elif a.password:
         print("⚠ Password provided without email; skipping MediaFire login")
     # report session type
