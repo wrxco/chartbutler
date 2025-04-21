@@ -306,8 +306,8 @@ def parse_region(tables):
     return rows
 
 def mediafire_direct(url, s):
-    # always use the public '/file/' page for HTML fallbacks
-    page_url = url.replace('/file_premium/', '/file/')
+    # use the original URL for HTML fallbacks (preserve '/file_premium/' path)
+    page_url = url
     # Extract quick key from URL path
     parts = urlparse(page_url).path.rstrip('/').split('/')
     quick_key = parts[-3] if len(parts) >= 3 else None
