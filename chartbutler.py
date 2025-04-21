@@ -306,11 +306,15 @@ def parse_region(tables):
     return rows
 
 def mediafire_direct(url, s):
-    # use the original URL for HTML fallbacks (preserve '/file_premium/' path)
-    page_url = url
-    # Extract quick key from URL path
-    parts = urlparse(page_url).path.rstrip('/').split('/')
-    quick_key = parts[-3] if len(parts) >= 3 else None
+    orig_url = url
+    # page_url used for HTML fallbacks (preserves '/file_premium/' path)
+    page_url = orig_url
+    # Extract quick key from URL path (element after 'file' or 'file_premium')
+    parts = urlparse(orig_url).path.rstrip('/').split('/')
+    if len(parts) >= 3:
+        quick_key = parts[2]
+    else:
+        quick_key = None
     api = getattr(s, 'mediafire_api', None)
     # 1) Try API direct link if available
     if api and quick_key:
@@ -341,7 +345,18 @@ def mediafire_direct(url, s):
             print(f"⚠ [MediaFire API] no download links in response, keys: {list(resp.keys())}")
         except Exception as e:
             print(f"⚠ [MediaFire API] error fetching links for key {quick_key}: {e}")
-    # 2) HTML regex fallback (unauthenticated or API fallback)
+    # 2) Premium redirect fallback (for '/file_premium/' URLs)
+    try:
+        # HEAD request to capture direct-download redirect without following
+        resp = s.head(page_url, allow_redirects=False, timeout=60)
+        if resp.status_code in (301, 302, 303, 307, 308):
+            loc = resp.headers.get('Location')
+            if loc:
+                print(f"⇱ [Premium redirect] using direct link: {loc}")
+                return loc
+    except Exception:
+        pass
+    # 3) HTML regex fallback (unauthenticated or API fallback)
     try:
         page = s.get(page_url, timeout=60).text
         m = re.search(r'href=["\'](https://download[^"\']+)["\']', page)
