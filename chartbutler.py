@@ -390,6 +390,30 @@ def pick_links(files):
     console.print()
 
     raw = console.input("Download which files? (* for all) > ").strip().lower()
+    # parse selection: support all (*), ranges (e.g., 4-8), lists (e.g., 3,5,7), and single indices
+    if raw in ("*", "all"):
+        picks = list(range(len(files)))
+    else:
+        picks = set()
+        for part in re.split(r"[,\\s]+", raw):
+            part = part.strip()
+            if not part:
+                continue
+            # range selection
+            if "-" in part:
+                start_str, end_str = part.split("-", 1)
+                if start_str.isdigit() and end_str.isdigit():
+                    s, e = int(start_str), int(end_str)
+                    for n in range(min(s, e), max(s, e) + 1):
+                        if 1 <= n <= len(files):
+                            picks.add(n - 1)
+            # single index
+            elif part.isdigit():
+                n = int(part)
+                if 1 <= n <= len(files):
+                    picks.add(n - 1)
+        picks = sorted(picks)
+    return picks
     return list(range(len(files))) if raw in ("*", "all") else [
         int(x) - 1
         for x in re.split(r"[,\s]+", raw)
