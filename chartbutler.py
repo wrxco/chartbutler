@@ -58,7 +58,6 @@ def pick_source():
         print(f"Invalid selection '{ans}'. Please choose a valid source.")
 
 def make_session(a):
-def make_session(a):
     """
     Create an anonymous HTTP session with a custom User-Agent and retry strategy.
     """
