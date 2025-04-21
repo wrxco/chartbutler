@@ -64,9 +64,21 @@ def make_session(a):
         s.auth_mode = 'anonymous'
         return s
     import getpass
-    # start session, set User-Agent
+    # start session, set User-Agent, and mount retry adapter for transient errors (e.g., rate limiting)
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
     s = requests.Session()
     s.headers["User-Agent"] = UA
+    # Retry on 429, 500-504 errors, with backoff
+    retry_strategy = Retry(
+        total=3,
+        status_forcelist=[429, 500, 502, 503, 504],
+        backoff_factor=1,
+        allowed_methods=["HEAD", "GET", "OPTIONS"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    s.mount("https://", adapter)
+    s.mount("http://", adapter)
     # authentication mode: anonymous | cookies | premium
     mode = 'anonymous'
     # 1) load cookies if file provided
@@ -315,6 +327,7 @@ def mediafire_direct(url, s):
                 for key in ('direct_download', 'download_url'):
                     val = first.get(key)
                     if val:
+                        print(f"⇱ [MediaFire API] using direct link: {val}")
                         return val
         except Exception:
             pass
@@ -323,7 +336,9 @@ def mediafire_direct(url, s):
         page = s.get(page_url, timeout=60).text
         m = re.search(r'href=["\'](https://download[^"\']+)["\']', page)
         if m:
-            return m.group(1)
+            fallback = m.group(1)
+            print(f"⇱ [HTML regex] fallback link: {fallback}")
+            return fallback
     except Exception:
         pass
     # 3) Fallback: scrape HTML for download link using a browser UA
@@ -350,6 +365,7 @@ def mediafire_direct(url, s):
                 link = "https:" + link
             elif link.startswith("/"):
                 link = "https://www.mediafire.com" + link
+            print(f"⇱ [HTML scrape] fallback link: {link}")
             return link
     # fallback: any link to download server
     for a_tag in soup_page.find_all("a", href=True):
@@ -360,6 +376,7 @@ def mediafire_direct(url, s):
                 link = "https:" + link
             elif link.startswith("/"):
                 link = "https://www.mediafire.com" + link
+            print(f"⇱ [HTML scrape] fallback link: {link}")
             return link
     # no direct link found
     raise RuntimeError(f"Direct link not found for {page_url}")
