@@ -28,7 +28,7 @@ rich
 Optional packages for enhanced functionality:
 ```
 python-Levenshtein    # faster fuzzy matching
-zipfile-deflate64     # deflate64 ZIP extraction support (pip install zipfile-deflate64)
+zipfile-deflate64     # deflate64 ZIP extraction support
 ```
 
 ## Installation
