@@ -4,10 +4,15 @@
 #  v0.9 + full‑length Area & Notes columns
 # ----------------------------------------------------------
 #  pip install requests beautifulsoup4 tqdm tabulate fuzzywuzzy
-#  (opt) pip install python-Levenshtein  mediafire
+#  (opt) pip install python-Levenshtein mediafire zipfile-deflate64
 # ----------------------------------------------------------
 
 import argparse, os, re, sys, zipfile, shutil
+try:
+    from zipfile_deflate64 import ZipFile as Deflate64ZipFile
+    zipfile.ZipFile = Deflate64ZipFile
+except ImportError:
+    pass
 from urllib.parse import urlparse
 import requests, bs4, tqdm
 from tabulate import tabulate
@@ -487,30 +492,10 @@ def fetch(url,dest,sess,done):
         os.replace(tmp, final)
     except Exception:
         os.rename(tmp, final)
-    # if zip, extract and remove (with deflate64 support via libarchive fallback)
+    # if zip, extract and remove
     if final.lower().endswith(".zip"):
-        try:
-            with zipfile.ZipFile(final) as z:
-                z.extractall(dest)
-        except (NotImplementedError, zipfile.BadZipFile) as e:
-            # fallback to libarchive for unsupported ZIP compression method (e.g., deflate64)
-            try:
-                import libarchive.public as libarchive
-            except ImportError:
-                raise RuntimeError(
-                    f"Failed to extract {final}: unsupported ZIP compression ({e}). "
-                    "Install 'libarchive-c' (pip install libarchive-c) to enable deflate64 ZIP support."
-                )
-            for entry in libarchive.file_reader(final):
-                outpath = os.path.join(dest, entry.pathname)
-                if entry.isdir:
-                    os.makedirs(outpath, exist_ok=True)
-                else:
-                    os.makedirs(os.path.dirname(outpath), exist_ok=True)
-                    with open(outpath, "wb") as f:
-                        for block in entry.get_blocks():
-                            f.write(block)
-        # remove archive after extraction
+        with zipfile.ZipFile(final) as z:
+            z.extractall(dest)
         os.remove(final)
 
 # ───── main ─────

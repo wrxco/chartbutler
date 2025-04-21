@@ -30,7 +30,7 @@ Optional packages for enhanced functionality:
 ```
 python-Levenshtein    # faster fuzzy matching
 mediafire             # MediaFire API support for premium downloads
-libarchive-c          # deflate64 ZIP extraction support (pip install libarchive-c)
+zipfile-deflate64     # deflate64 ZIP extraction support (pip install zipfile-deflate64)
 ```
 
 ## Installation
