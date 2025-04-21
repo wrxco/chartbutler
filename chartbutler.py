@@ -445,10 +445,30 @@ def fetch(url,dest,sess,done):
         os.replace(tmp, final)
     except Exception:
         os.rename(tmp, final)
-    # if zip, extract and remove
+    # if zip, extract and remove (with deflate64 support via libarchive fallback)
     if final.lower().endswith(".zip"):
-        with zipfile.ZipFile(final) as z:
-            z.extractall(dest)
+        try:
+            with zipfile.ZipFile(final) as z:
+                z.extractall(dest)
+        except (NotImplementedError, zipfile.BadZipFile) as e:
+            # fallback to libarchive for unsupported ZIP compression method (e.g., deflate64)
+            try:
+                import libarchive.public as libarchive
+            except ImportError:
+                raise RuntimeError(
+                    f"Failed to extract {final}: unsupported ZIP compression ({e}). "
+                    "Install 'python-libarchive-c' to enable deflate64 ZIP support."
+                )
+            for entry in libarchive.file_reader(final):
+                outpath = os.path.join(dest, entry.pathname)
+                if entry.isdir:
+                    os.makedirs(outpath, exist_ok=True)
+                else:
+                    os.makedirs(os.path.dirname(outpath), exist_ok=True)
+                    with open(outpath, "wb") as f:
+                        for block in entry.get_blocks():
+                            f.write(block)
+        # remove archive after extraction
         os.remove(final)
 
 # ───── main ─────

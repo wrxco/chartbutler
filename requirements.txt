@@ -12,3 +12,5 @@ rich
 python-Levenshtein
 # For MediaFire API (premium) support:
 mediafire
+# For deflate64 ZIP extraction support:
+python-libarchive-c
