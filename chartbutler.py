@@ -364,17 +364,6 @@ def pick_region(regs):
         if ans in regs: return ans
         guess,_=fuzz.extractOne(ans,regs)
         if input(f"Did you mean '{guess}'? [Y/n] ").lower() in ("","y"): return guess
-r"""  # commented-out stub of old pick_links
-def pick_links(files):
-    table=[(i+1,s or "",landing_filename(link),area,note)
-           for i,(area,link,s,note) in enumerate(files)]
-    print("\nFILES")
-    print(tabulate(table,headers=["#","Size","Filename","Area","Notes"],
-                   tablefmt="rounded_grid"))
-    raw=input("Download which files? (* for all) > ").strip().lower()
-    return list(range(len(files))) if raw in ("*","all") else \
-           [int(x)-1 for x in re.split(r"[,\s]+",raw) if x.isdigit() and 1<=int(x)<=len(files)]
-"""
 
 def pick_links(files):
     console = Console()
