@@ -457,7 +457,7 @@ def fetch(url,dest,sess,done):
             except ImportError:
                 raise RuntimeError(
                     f"Failed to extract {final}: unsupported ZIP compression ({e}). "
-                    "Install 'python-libarchive-c' to enable deflate64 ZIP support."
+                    "Install 'libarchive-c' (pip install libarchive-c) to enable deflate64 ZIP support."
                 )
             for entry in libarchive.file_reader(final):
                 outpath = os.path.join(dest, entry.pathname)
