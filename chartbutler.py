@@ -318,8 +318,12 @@ def mediafire_direct(url, s):
     # 1) Try API direct link if available
     if api and quick_key:
         try:
+            # Attempt to use MediaFire API for a permissioned link
             resp = api.file_get_links(quick_key)
-            links = resp.get('links') or []
+            # Unwrap nested 'response' if present
+            data = resp.get('response', resp) or resp
+            links = data.get('links') or []
+            # Some versions may return a single dict
             if isinstance(links, dict):
                 links = [links]
             if links:
@@ -329,8 +333,10 @@ def mediafire_direct(url, s):
                     if val:
                         print(f"⇱ [MediaFire API] using direct link: {val}")
                         return val
-        except Exception:
-            pass
+            # no links found in API response
+            print(f"⚠ [MediaFire API] no links for key {quick_key}, response keys: {list(data.keys())}")
+        except Exception as e:
+            print(f"⚠ [MediaFire API] error fetching links for key {quick_key}: {e}")
     # 2) HTML regex fallback (unauthenticated or API fallback)
     try:
         page = s.get(page_url, timeout=60).text
