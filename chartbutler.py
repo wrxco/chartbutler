@@ -4,7 +4,7 @@
 #  v0.9 + full‑length Area & Notes columns
 # ----------------------------------------------------------
 #  pip install requests beautifulsoup4 tqdm tabulate fuzzywuzzy
-#  (opt) pip install python-Levenshtein mediafire zipfile-deflate64
+#  (opt) pip install python-Levenshtein zipfile-deflate64
 # ----------------------------------------------------------
 
 import argparse, os, re, sys, zipfile, shutil
@@ -28,9 +28,6 @@ def cli():
     p = argparse.ArgumentParser(
         description="Download files from The Chart Locker or Sailing Grace"
     )
-    p.add_argument("--cookies", help="Path to cookies.txt for MediaFire session")
-    p.add_argument("--email", help="MediaFire account email (optional)")
-    p.add_argument("--password", help="MediaFire account password (optional)")
     p.add_argument(
         "--charts-dir",
         default=os.getcwd(),
@@ -60,21 +57,15 @@ def pick_source():
             return ans
         print(f"Invalid selection '{ans}'. Please choose a valid source.")
 
-# ───── session ─────
 def make_session(a):
-    # For savinggrace source, skip MediaFire auth entirely
-    if getattr(a, 'source', None) == 'savinggrace':
-        s = requests.Session()
-        s.headers["User-Agent"] = UA
-        s.auth_mode = 'anonymous'
-        return s
-    import getpass
-    # start session, set User-Agent, and mount retry adapter for transient errors (e.g., rate limiting)
+def make_session(a):
+    """
+    Create an anonymous HTTP session with a custom User-Agent and retry strategy.
+    """
     from requests.adapters import HTTPAdapter
     from urllib3.util.retry import Retry
     s = requests.Session()
     s.headers["User-Agent"] = UA
-    # Retry on 429, 500-504 errors, with backoff
     retry_strategy = Retry(
         total=3,
         status_forcelist=[429, 500, 502, 503, 504],
@@ -84,54 +75,6 @@ def make_session(a):
     adapter = HTTPAdapter(max_retries=retry_strategy)
     s.mount("https://", adapter)
     s.mount("http://", adapter)
-    # authentication mode: anonymous | premium | cookies
-    mode = 'anonymous'
-    # 1) attempt MediaFire API login when email given (premium mode)
-    if a.email:
-        # prompt for password if missing
-        if not a.password:
-            try:
-                a.password = getpass.getpass(f"MediaFire password for {a.email}: ")
-            except (KeyboardInterrupt, EOFError):
-                print("\n⚠ No password entered; skipping MediaFire login")
-        # if password is now set, try to fetch session token
-        if a.password:
-            try:
-                from mediafire import MediaFireApi
-                api = MediaFireApi()
-                tok = api.user_get_session_token(
-                    app_id="42511",
-                    email=a.email,
-                    password=a.password
-                )
-                api._session = tok
-                s.headers["Authorization"] = "Bearer " + tok.get("session_token", "")
-                s.mediafire_api = api
-                mode = 'premium'
-            except Exception as e:
-                print("⚠ MediaFire login failed:", e)
-        else:
-            print("⚠ MediaFire login skipped: no password provided")
-    # 2) load cookies if file provided and no premium login
-    elif a.cookies and os.path.isfile(a.cookies):
-        for ln in open(a.cookies, encoding="utf-8"):
-            if ln.startswith("#") or not ln.strip():
-                continue
-            dom, _, path, sec, _, name, val = ln.strip().split("\t")
-            s.cookies.set(name, val, domain=dom, path=path, secure=(sec.lower() == "true"))
-        mode = 'cookies'
-    # 3) warn if password provided without email/cookies
-    elif a.password:
-        print("⚠ Password provided without email; skipping MediaFire login")
-    # report session type
-    if mode == 'premium':
-        print("✅ Using MediaFire API (premium) session")
-    elif mode == 'cookies':
-        print("✅ Using cookies-based MediaFire session")
-    else:
-        print("⚠ No MediaFire credentials; proceeding anonymously")
-    # store auth mode
-    s.auth_mode = mode
     return s
 
 # ───── helpers ─────
