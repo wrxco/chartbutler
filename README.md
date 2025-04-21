@@ -42,12 +42,10 @@ pip install -r requirements.txt
 
 ## Usage
 ```bash
-python chartbutler.py --source {chartlocker,savinggrace} [--cookies COOKIES_FILE] [--email EMAIL [--password PASSWORD]] [--charts-dir OUTPUT_DIR]
+python chartbutler.py --source {chartlocker,savinggrace} [--charts-dir OUTPUT_DIR]
 ```
 
 - `--source`: choose which site to download from: `chartlocker` or `savinggrace`.
-- `--cookies`: path to cookies.txt exported from your browser for MediaFire sessions (ChartLocker only).
-- `--email`, `--password`: MediaFire account credentials for premium API access (ChartLocker only).
 - `--charts-dir`: destination directory for downloaded charts (default: current directory).
 
 The script will prompt you to select a region and then the files to download.
@@ -63,8 +61,6 @@ A typical workflow keeps the script in one directory and downloads charts into a
 ![Downloading charts into the `charts` directory](screenshots/cli_b.png)
 
 ## Notes
- - The cookie-based download method has not been thoroughly tested and may be unstable.
- - When using MediaFire credentials (`--email`/`--password`) or cookies, ChartButler will attempt to use the MediaFire API for a permissioned download link. You will see a log line prefixed with “⇱ [MediaFire API]” indicating the direct URL in use. If the API is not available or falls back, you will see “⇱ [HTML regex]” or “⇱ [HTML scrape]” messages.
  - The script is not affiliated with or endorsed by The Chart Locker project, Sailing Grace, or MediaFire.
 
 ## Credit
